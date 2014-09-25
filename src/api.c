@@ -1,4 +1,5 @@
 #include "api.h"
+#include "item.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -18,7 +19,25 @@ int api_add_block_type(lua_State *l)
 {
     // add the given 'block type' to our engine and return the generated block ID
     const char *block_name = lua_tostring(l, 1);
-    int block_id = 37;  // random id. we should have a real dynamic way to add block types in the engine
+
+    // retrieve table
+    int tiles[7] = {0};
+    luaL_checktype(l, 2, LUA_TTABLE);
+    lua_pushnil(l);
+    int i = 0;
+    while (lua_next(l, 2) != 0) {
+       tiles[i] = lua_tonumber(l, -1);
+
+       lua_pop(l, 1);
+        i++;
+    }
+
+    bool is_plant = lua_toboolean(l, 3);
+    bool is_obstacle = lua_toboolean(l, 4);
+    bool is_transparent = lua_toboolean(l, 5);
+    bool is_destructable = lua_toboolean(l, 6);
+
+    int block_id = add_new_item(block_name, tiles, is_plant, is_obstacle, is_transparent, is_destructable);
     lua_pushnumber(l, block_id);
     return 1;
 }
@@ -28,21 +47,6 @@ luaL_Reg clua_regs[] =
     { "add_block_type", api_add_block_type },
     { NULL, NULL }
 };
-
-
-// structs
-struct module_name_list {
-    char *filename;
-    struct module_name_list *next_ptr;
-};
-
-struct loaded_module_list {
-    char *filename;
-    lua_State *L;
-    struct loaded_module_list *next_ptr;
-};
-
-struct loaded_module_list *loaded_mods;
 
 
 // lua init/shutdown
