@@ -44,8 +44,8 @@ typedef struct {
     Map map;
     Map lights;
     SignList signs;
-    int p;
-    int q;
+    int p; // chunk 'x' id
+    int q; // chunk 'z' id
     int faces;
     int sign_faces;
     int dirty;
@@ -56,8 +56,8 @@ typedef struct {
 } Chunk;
 
 typedef struct {
-    int p;
-    int q;
+    int p; // chunk 'x' id
+    int q; // chunk 'z' id
     int load;
     Map *block_maps[3][3];
     Map *light_maps[3][3];
@@ -87,9 +87,9 @@ typedef struct {
     float x;
     float y;
     float z;
-    float rx;
-    float ry;
-    float t;
+    float rx; // 'x' rotation
+    float ry; // 'z' rotation
+    float t; // time
 } State;
 
 typedef struct {
@@ -1773,14 +1773,14 @@ void render_item(Attrib *attrib) {
     glUniform3f(attrib->camera, 0, 0, 5);
     glUniform1i(attrib->sampler, 0);
     glUniform1f(attrib->timer, time_of_day());
-    int w = items[g->item_index];
-    if (is_plant(w)) {
-        GLuint buffer = gen_plant_buffer(0, 0, 0, 0.5, w);
+    int item_id = g->item_index;
+    if (is_plant(item_id)) {
+        GLuint buffer = gen_plant_buffer(0, 0, 0, 0.5, item_id);
         draw_plant(attrib, buffer);
         del_buffer(buffer);
     }
     else {
-        GLuint buffer = gen_cube_buffer(0, 0, 0, 0.5, w);
+        GLuint buffer = gen_cube_buffer(0, 0, 0, 0.5, item_id);
         draw_cube(attrib, buffer);
         del_buffer(buffer);
     }
@@ -2157,8 +2157,8 @@ void on_right_click() {
     int hw = hit_test(1, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
     if (hy > 0 && hy < 256 && is_obstacle(hw)) {
         if (!player_intersects_block(2, s->x, s->y, s->z, hx, hy, hz)) {
-            set_block(hx, hy, hz, items[g->item_index]);
-            record_block(hx, hy, hz, items[g->item_index]);
+            set_block(hx, hy, hz, g->item_index);
+            record_block(hx, hy, hz, g->item_index);
         }
     }
 }
@@ -2167,9 +2167,9 @@ void on_middle_click() {
     State *s = &g->players->state;
     int hx, hy, hz;
     int hw = hit_test(0, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
-    for (int i = 0; i < item_count; i++) {
-        if (items[i] == hw) {
-            g->item_index = i;
+    for (int i = 0; i < item_count(); i++) {
+        if (get_item_from_id(i)->id == hw) {
+            g->item_index = hw;
             break;
         }
     }
@@ -2258,12 +2258,15 @@ void on_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
             g->item_index = 9;
         }
         if (key == CRAFT_KEY_ITEM_NEXT) {
-            g->item_index = (g->item_index + 1) % item_count;
+            g->item_index++;
+            if (g->item_index >= item_count()) {
+                g->item_index = 0;
+            }
         }
         if (key == CRAFT_KEY_ITEM_PREV) {
             g->item_index--;
             if (g->item_index < 0) {
-                g->item_index = item_count - 1;
+                g->item_index = item_count() - 1;
             }
         }
         if (key == CRAFT_KEY_OBSERVE) {
@@ -2312,13 +2315,16 @@ void on_scroll(GLFWwindow *window, double xdelta, double ydelta) {
     static double ypos = 0;
     ypos += ydelta;
     if (ypos < -SCROLL_THRESHOLD) {
-        g->item_index = (g->item_index + 1) % item_count;
+        g->item_index++;
+        if (g->item_index >= item_count()) {
+            g->item_index = 0;
+        }
         ypos = 0;
     }
     if (ypos > SCROLL_THRESHOLD) {
         g->item_index--;
         if (g->item_index < 0) {
-            g->item_index = item_count - 1;
+            g->item_index = item_count() - 1;
         }
         ypos = 0;
     }
@@ -2757,6 +2763,8 @@ int main(int argc, char **argv) {
         double last_commit = glfwGetTime();
         double last_update = glfwGetTime();
         GLuint sky_buffer = gen_sky_buffer();
+        items = NULL;
+        setup_base_items();
 
         Player *me = g->players;
         State *s = &g->players->state;

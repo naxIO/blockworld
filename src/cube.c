@@ -84,12 +84,13 @@ void make_cube(
     int left, int right, int top, int bottom, int front, int back,
     float x, float y, float z, float n, int w)
 {
-    int wleft = blocks[w][0];
-    int wright = blocks[w][1];
-    int wtop = blocks[w][2];
-    int wbottom = blocks[w][3];
-    int wfront = blocks[w][4];
-    int wback = blocks[w][5];
+    struct item_list *it = get_item_from_id(w);
+    int wleft = it->tile->left;
+    int wright = it->tile->right;
+    int wtop = it->tile->top;
+    int wbottom = it->tile->bottom;
+    int wfront = it->tile->front;
+    int wback = it->tile->back;
     make_cube_faces(
         data, ao, light,
         left, right, top, bottom, front, back,
@@ -129,8 +130,9 @@ void make_plant(
     float s = 0.0625;
     float a = 0;
     float b = s;
-    float du = (plants[w] % 16) * s;
-    float dv = (plants[w] / 16) * s;
+    struct item_list *plant = get_item_from_id(w);
+    float du = (plant->tile->sprite % 16) * s;
+    float dv = (plant->tile->sprite / 16) * s;
     for (int i = 0; i < 4; i++) {
         for (int v = 0; v < 6; v++) {
             int j = indices[i][v];
