@@ -2763,8 +2763,6 @@ int main(int argc, char **argv) {
         double last_commit = glfwGetTime();
         double last_update = glfwGetTime();
         GLuint sky_buffer = gen_sky_buffer();
-        items = NULL;
-        setup_base_items();
 
         Player *me = g->players;
         State *s = &g->players->state;
@@ -2773,15 +2771,16 @@ int main(int argc, char **argv) {
         me->buffer = 0;
         g->player_count = 1;
 
+        items = NULL;
+        setup_base_items();
+        clua_init();
+
         // LOAD STATE FROM DATABASE //
         int loaded = db_load_state(&s->x, &s->y, &s->z, &s->rx, &s->ry);
         force_chunks(me);
         if (!loaded) {
             s->y = highest_block(s->x, s->z) + 2;
         }
-
-        // INITIALIZE LUA //
-        clua_init();
 
         // BEGIN MAIN LOOP //
         double previous = glfwGetTime();
