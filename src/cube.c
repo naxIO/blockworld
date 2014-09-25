@@ -85,6 +85,9 @@ void make_cube(
     float x, float y, float z, float n, int w)
 {
     struct item_list *it = get_item_from_id(w);
+    if (it == NULL) {
+        it = get_item_from_name("error");
+    }
     int wleft = it->tile->left;
     int wright = it->tile->right;
     int wtop = it->tile->top;

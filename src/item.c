@@ -62,6 +62,7 @@ void setup_base_items() {
     add_new_item("color29", (int[7]){205, 205, 205, 205, 205, 205, 0}, false, true, false, true);
     add_new_item("color30", (int[7]){206, 206, 206, 206, 206, 206, 0}, false, true, false, true);
     add_new_item("color31", (int[7]){207, 207, 207, 207, 207, 207, 0}, false, true, false, true);
+    add_new_item("error", (int[7]){30, 30, 30, 30, 30, 30, 0}, false, true, true, true);
 }
 
 int item_count() {
