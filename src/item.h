@@ -35,9 +35,8 @@ struct item_list {
 void setup_base_items();
 
 int add_new_item(const char *name, int tile[7], bool is_plant, bool is_obstacle, bool is_transparent, bool is_destructable); // returns allocated item id
-struct item_list *get_item_from_id(int id);
-struct item_list *get_item_from_name(char *name);
-int item_count();
+struct item_list *get_item_by_id(unsigned int id);
+struct item_list *get_item_by_name(char *name);
 
 bool is_plant(int item_id);
 bool is_obstacle(int item_id);
@@ -46,5 +45,6 @@ bool is_destructable(int item_id);
 
 // global data
 struct item_list *items;
+int last_item_id;
 
 #endif

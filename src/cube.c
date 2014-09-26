@@ -84,9 +84,9 @@ void make_cube(
     int left, int right, int top, int bottom, int front, int back,
     float x, float y, float z, float n, int w)
 {
-    struct item_list *it = get_item_from_id(w);
+    struct item_list *it = get_item_by_id(ABS(w));
     if (it == NULL) {
-        it = get_item_from_name("error");
+        it = get_item_by_name("error");
     }
     int wleft = it->tile->left;
     int wright = it->tile->right;
@@ -133,7 +133,7 @@ void make_plant(
     float s = 0.0625;
     float a = 0;
     float b = s;
-    struct item_list *plant = get_item_from_id(w);
+    struct item_list *plant = get_item_by_id(ABS(w));
     float du = (plant->tile->sprite % 16) * s;
     float dv = (plant->tile->sprite / 16) * s;
     for (int i = 0; i < 4; i++) {

@@ -2167,8 +2167,8 @@ void on_middle_click() {
     State *s = &g->players->state;
     int hx, hy, hz;
     int hw = hit_test(0, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
-    for (int i = 0; i < item_count(); i++) {
-        if (get_item_from_id(i)->id == hw) {
+    for (int i = 0; i <= last_item_id; i++) {
+        if (get_item_by_id(i)->id == hw) {
             g->item_index = hw;
             break;
         }
@@ -2259,14 +2259,14 @@ void on_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
         }
         if (key == CRAFT_KEY_ITEM_NEXT) {
             g->item_index++;
-            if (g->item_index >= item_count()) {
+            if (g->item_index >= last_item_id) {
                 g->item_index = 0;
             }
         }
         if (key == CRAFT_KEY_ITEM_PREV) {
             g->item_index--;
             if (g->item_index < 0) {
-                g->item_index = item_count() - 1;
+                g->item_index = last_item_id - 1;
             }
         }
         if (key == CRAFT_KEY_OBSERVE) {
@@ -2316,7 +2316,7 @@ void on_scroll(GLFWwindow *window, double xdelta, double ydelta) {
     ypos += ydelta;
     if (ypos < -SCROLL_THRESHOLD) {
         g->item_index++;
-        if (g->item_index >= item_count()) {
+        if (g->item_index >= last_item_id) {
             g->item_index = 0;
         }
         ypos = 0;
@@ -2324,7 +2324,7 @@ void on_scroll(GLFWwindow *window, double xdelta, double ydelta) {
     if (ypos > SCROLL_THRESHOLD) {
         g->item_index--;
         if (g->item_index < 0) {
-            g->item_index = item_count() - 1;
+            g->item_index = last_item_id - 1;
         }
         ypos = 0;
     }
@@ -2771,7 +2771,6 @@ int main(int argc, char **argv) {
         me->buffer = 0;
         g->player_count = 1;
 
-        items = NULL;
         setup_base_items();
         clua_init();
 

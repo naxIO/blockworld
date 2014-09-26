@@ -4,8 +4,111 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct item_list *items;
+
+// holds the id of the 'last' item we have
+// this gets recalced every time we add or subtract items
+int last_item_id;
+
+void _recalc_last_item_id() {
+    last_item_id = 0;
+
+    struct item_list *it = NULL;
+    SGLIB_LIST_MAP_ON_ELEMENTS(struct item_list, items, it, next_ptr, {
+        if (it->id > last_item_id) {
+            last_item_id = it->id;
+        }
+    });
+}
+
+// we do lots and lots of lookups by id for our item list, mostly for recalcing the world
+// doing this by standard linked-list traversal is super slow, so we instead use an
+//   index-based (eg: [2], [37], etc) cache internally to access things by id faster
+struct item_list **_item_id_lookup_cache;
+
+// recalculate all we need for id-based lookup cache
+void _recalc_item_id_lookup_cache() {
+    // free old space
+    if (_item_id_lookup_cache != NULL) {
+        free(_item_id_lookup_cache);
+    }
+
+    // create new space
+    _item_id_lookup_cache = calloc(sizeof(struct item_list), last_item_id);
+
+    // and allocate required id mappings with standard linked-list traversal
+    struct item_list *it = NULL;
+    SGLIB_LIST_MAP_ON_ELEMENTS(struct item_list, items, it, next_ptr, {
+        _item_id_lookup_cache[it->id] = it;
+    });
+}
+
+struct item_list *get_item_by_id(unsigned int id) {
+    // cache is only valid for ids >= last_item_id, so we check that here
+    if (id <= last_item_id) {
+        return _item_id_lookup_cache[id];
+    }
+    return NULL;
+}
+
+// we still do linked-list traversal for accessing by name, but we assume modules cache
+//   the ids of their required items anyways. if required, do this name-based lookup by
+//   a hash-map in the future
+struct item_list *get_item_by_name(char *name) {
+    SGLIB_LIST_MAP_ON_ELEMENTS(struct item_list, items, item, next_ptr, {
+        if (strncmp(item->name, name, sizeof(item->name) / sizeof(char)) == 0) {
+            return item;
+        }
+    });
+    return NULL;
+}
+
+// adds a new item and returns allocated item id
+// also recalcs caches as required above
+int add_new_item(const char *name, int tile[7], bool is_plant, bool is_obstacle, bool is_transparent, bool is_destructable) {
+    // create tiles
+    struct tile_ids *tiles = malloc(sizeof(struct tile_ids));
+    tiles->top = tile[0];
+    tiles->bottom = tile[1];
+    tiles->left = tile[2];
+    tiles->right = tile[3];
+    tiles->front = tile[4];
+    tiles->back = tile[5];
+    tiles->sprite = tile[6];
+
+    // create item
+    struct item_list *new_item = malloc(sizeof(struct item_list));
+    new_item->name = name;
+    new_item->next_ptr = NULL;
+    new_item->id = last_item_id + 1;
+    new_item->tile = tiles;
+    new_item->is_plant = is_plant;
+    new_item->is_obstacle = is_obstacle;
+    new_item->is_transparent = is_transparent;
+    new_item->is_destructable = is_destructable;
+
+    // add item to our internal list
+    if (items == NULL) {
+        items = new_item;
+    }
+    else {
+        SGLIB_LIST_ADD(struct item_list, items, new_item, next_ptr);
+    }
+
+    // recalculate item caches
+    _recalc_last_item_id();
+    _recalc_item_id_lookup_cache();
+
+    return new_item->id;
+}
+
+// initializing our base items
 void setup_base_items() {
-    // ints -> (top, bottom, left, right, front, back) tiles
+    items = NULL;
+    _item_id_lookup_cache = NULL;
+    last_item_id = -1; // must be -1 because add_new_item calcs new item id as this + 1
+
+    // face tile arrays -> (top, bottom, left, right, front, back, sprite)
     add_new_item("empty", (int[7]){0, 0, 0, 0, 0, 0, 0}, false, false, true, false);
     add_new_item("grass", (int[7]){32, 0, 16, 16, 16, 16, 0}, false, true, false, true);
     add_new_item("sand", (int[7]){1, 1, 1, 1, 1, 1, 0}, false, true, false, true);
@@ -65,57 +168,10 @@ void setup_base_items() {
     add_new_item("error", (int[7]){30, 30, 30, 30, 30, 30, 0}, false, true, true, true);
 }
 
-int item_count() {
-    int len = 0;
-    SGLIB_LIST_LEN(struct item_list, items, next_ptr, len)
-    return len;
-}
-
-// returns allocated item id
-int add_new_item(const char *name, int tile[7], bool is_plant, bool is_obstacle, bool is_transparent, bool is_destructable) {
-    struct tile_ids *tiles = malloc(sizeof(struct tile_ids));
-    tiles->top = tile[0];
-    tiles->bottom = tile[1];
-    tiles->left = tile[2];
-    tiles->right = tile[3];
-    tiles->front = tile[4];
-    tiles->back = tile[5];
-    tiles->sprite = tile[6];
-
-    struct item_list *item = malloc(sizeof(struct item_list));
-    item->name = name;
-    item->id = item_count();
-    item->tile = tiles;
-    item->is_plant = is_plant;
-    item->is_obstacle = is_obstacle;
-    item->is_transparent = is_transparent;
-    item->is_destructable = is_destructable;
-
-    SGLIB_LIST_ADD(struct item_list, items, item, next_ptr);
-
-    return item->id;
-}
-
-struct item_list *get_item_from_id(int id) {
-    SGLIB_LIST_MAP_ON_ELEMENTS(struct item_list, items, item, next_ptr, {
-        if (item->id == id) {
-            return item;
-        }
-    });
-    return NULL;
-}
-
-struct item_list *get_item_from_name(char *name) {
-    SGLIB_LIST_MAP_ON_ELEMENTS(struct item_list, items, item, next_ptr, {
-        if (strncmp(item->name, name, sizeof(item->name) / sizeof(char)) == 0) {
-            return item;
-        }
-    });
-    return NULL;
-}
-
+// is_* convenience functions
 bool is_plant(int item_id) {
-    struct item_list *item = get_item_from_id(item_id);
+    item_id = ABS(item_id); // TODO: why are we getting negative item ids?
+    struct item_list *item = get_item_by_id(item_id);
 
     if (item != NULL) {
         return item->is_plant;
@@ -125,8 +181,8 @@ bool is_plant(int item_id) {
 }
 
 bool is_obstacle(int item_id) {
-    item_id = abs(item_id); // TODO: why are we getting negative item ids?
-    struct item_list *item = get_item_from_id(item_id);
+    item_id = ABS(item_id); // TODO: why are we getting negative item ids?
+    struct item_list *item = get_item_by_id(item_id);
 
     if (item != NULL) {
         return item->is_obstacle;
@@ -136,8 +192,8 @@ bool is_obstacle(int item_id) {
 }
 
 bool is_transparent(int item_id) {
-    item_id = abs(item_id); // TODO: why are we getting negative item ids?
-    struct item_list *item = get_item_from_id(item_id);
+    item_id = ABS(item_id); // TODO: why are we getting negative item ids?
+    struct item_list *item = get_item_by_id(item_id);
 
     if (item != NULL) {
         return item->is_transparent;
@@ -147,7 +203,8 @@ bool is_transparent(int item_id) {
 }
 
 bool is_destructable(int item_id) {
-    struct item_list *item = get_item_from_id(item_id);
+    item_id = ABS(item_id); // TODO: why are we getting negative item ids?
+    struct item_list *item = get_item_by_id(item_id);
 
     if (item != NULL) {
         return item->is_destructable;
