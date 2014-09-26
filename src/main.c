@@ -20,6 +20,7 @@
 #include "tinycthread.h"
 #include "util.h"
 #include "world.h"
+#include "clouds.h"
 
 #define MAX_CHUNKS 8192
 #define MAX_PLAYERS 128
@@ -39,6 +40,13 @@
 #define WORKER_IDLE 0
 #define WORKER_BUSY 1
 #define WORKER_DONE 2
+
+#define RECV_BUFFER_SIZE 1024
+#define TEXT_BUFFER_SIZE 256
+#define LEFT 0
+#define CENTER 1
+#define RIGHT 2
+
 
 typedef struct {
     Map map;
@@ -2663,6 +2671,7 @@ int main(int argc, char **argv) {
     Attrib line_attrib = {0};
     Attrib text_attrib = {0};
     Attrib sky_attrib = {0};
+    CloudAttrib cloud_attrib = {0};
     GLuint program;
 
     program = load_program(
@@ -2679,7 +2688,22 @@ int main(int argc, char **argv) {
     block_attrib.extra4 = glGetUniformLocation(program, "ortho");
     block_attrib.camera = glGetUniformLocation(program, "camera");
     block_attrib.timer = glGetUniformLocation(program, "timer");
-
+    
+    program = load_program(
+        "shaders/cloud_vertex.glsl", "shaders/cloud_fragment.glsl");
+    cloud_attrib.program = program;
+    cloud_attrib.position = glGetAttribLocation(program, "position");
+    cloud_attrib.normal = glGetAttribLocation(program, "normal");
+    cloud_attrib.colour = glGetAttribLocation(program, "colour");
+    cloud_attrib.matrix = glGetUniformLocation(program, "matrix");
+    cloud_attrib.model = glGetUniformLocation(program, "model");
+    cloud_attrib.sampler = glGetUniformLocation(program, "sampler");
+    cloud_attrib.camera = glGetUniformLocation(program, "camera");
+    cloud_attrib.timer = glGetUniformLocation(program, "timer");
+    cloud_attrib.cloudColour = glGetUniformLocation(program, "cloudColour");
+    cloud_attrib.skysampler = glGetUniformLocation(program, "sky_sampler");
+    
+    
     program = load_program(
         "shaders/line_vertex.glsl", "shaders/line_fragment.glsl");
     line_attrib.program = program;
@@ -2774,6 +2798,10 @@ int main(int argc, char **argv) {
         setup_base_items();
         clua_init();
 
+        if (SHOW_CLOUDS) {
+            create_clouds();
+        }
+
         // LOAD STATE FROM DATABASE //
         int loaded = db_load_state(&s->x, &s->y, &s->z, &s->rx, &s->ry);
         force_chunks(me);
@@ -2839,6 +2867,10 @@ int main(int argc, char **argv) {
             }
             Player *player = g->players + g->observe1;
 
+            if (SHOW_CLOUDS) {
+                update_clouds(s->x, s->y, s->z, s->rx, s->ry, g->fov);
+            }
+
             // RENDER 3-D SCENE //
             glClear(GL_COLOR_BUFFER_BIT);
             glClear(GL_DEPTH_BUFFER_BIT);
@@ -2850,6 +2882,11 @@ int main(int argc, char **argv) {
             render_players(&block_attrib, player);
             if (SHOW_WIREFRAME) {
                 render_wireframe(&line_attrib, player);
+            }
+
+            if (SHOW_CLOUDS) {
+                cloud_attrib.time = time_of_day();
+                render_clouds(&cloud_attrib, g->width, g->height, s->x, s->y, s->z, s->rx, s->ry, g->fov, g->ortho, g->render_radius);
             }
 
             // RENDER HUD //
@@ -2958,6 +2995,9 @@ int main(int argc, char **argv) {
 
         // SHUTDOWN //
         clua_close();
+        if (SHOW_CLOUDS) {
+            cleanup_clouds();
+        }
         db_save_state(s->x, s->y, s->z, s->rx, s->ry);
         db_close();
         db_disable();
