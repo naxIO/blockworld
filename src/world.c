@@ -1,9 +1,13 @@
 #include "config.h"
 #include "noise.h"
 #include "world.h"
+#include "item.h"
 
 void create_world(int p, int q, world_func func, void *arg) {
     int pad = 1;
+    unsigned int grass_block_id = get_item_by_name("grass")->id;
+    unsigned int sand_block_id = get_item_by_name("sand")->id;
+    unsigned int first_flower_block_id = get_item_by_name("yellow flower")->id;
     for (int dx = -pad; dx < CHUNK_SIZE + pad; dx++) {
         for (int dz = -pad; dz < CHUNK_SIZE + pad; dz++) {
             int flag = 1;
@@ -16,17 +20,17 @@ void create_world(int p, int q, world_func func, void *arg) {
             float g = simplex2(-x * 0.01, -z * 0.01, 2, 0.9, 2);
             int mh = g * 32 + 16;
             int h = f * mh;
-            int w = 1;
+            int w = grass_block_id;
             int t = 12;
             if (h <= t) {
                 h = t;
-                w = 2;
+                w = sand_block_id;
             }
             // sand and grass terrain
             for (int y = 0; y < h; y++) {
                 func(x, y, z, w * flag, arg);
             }
-            if (w == 1) {
+            if (w == grass_block_id) {
                 if (SHOW_PLANTS) {
                     // grass
                     if (simplex2(-x * 0.1, z * 0.1, 4, 0.8, 2) > 0.6) {
@@ -34,7 +38,7 @@ void create_world(int p, int q, world_func func, void *arg) {
                     }
                     // flowers
                     if (simplex2(x * 0.05, -z * 0.05, 4, 0.8, 2) > 0.7) {
-                        int w = 18 + simplex2(x * 0.1, z * 0.1, 4, 0.8, 2) * 7;
+                        int w = first_flower_block_id + simplex2(x * 0.1, z * 0.1, 4, 0.8, 2) * 7;
                         func(x, h, z, w * flag, arg);
                     }
                 }
