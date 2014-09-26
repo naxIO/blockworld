@@ -80,6 +80,10 @@ GLuint make_shader(GLenum type, const char *source) {
 
 GLuint load_shader(GLenum type, const char *path) {
     char *data = load_file(path);
+    if (!data) {
+        fprintf(stderr, "error: unable to load shader %s\n", path);
+        return 0;
+    }
     GLuint result = make_shader(type, data);
     free(data);
     return result;
@@ -134,7 +138,8 @@ void load_png_texture(const char *file_name) {
     unsigned int width, height;
     error = lodepng_decode32_file(&data, &width, &height, file_name);
     if (error) {
-        fprintf(stderr, "error %u: %s\n", error, lodepng_error_text(error));
+        fprintf(stderr, "error %u: Unable to load texture %s: %s\n", error, file_name, lodepng_error_text(error));
+        return;
     }
     flip_image_vertical(data, width, height);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
