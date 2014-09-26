@@ -155,6 +155,9 @@ int clua_init()
                 }
             }
         }
+
+        // cleanup module names
+        free(mod_name);
     });
 
     return 0;
