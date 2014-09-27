@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void set_vertex(GLfloat *d,float x,float y,float z,float nx,float ny,float nz,float r,float g, float b, int *index);
+void set_vertex(GLfloat *d, float x, float y, float z, float nx, float ny, float nz, float r, float g, float b, int *index);
 
 void create_clouds() {
     weather = (Weather*)malloc(sizeof(Weather));
@@ -88,14 +88,14 @@ void create_clouds() {
 
 }
 
-void set_vertex(GLfloat *d,float x,float y,float z,float nx,float ny,float nz,float r,float g, float b, int *index){
+void set_vertex(GLfloat *d, float x, float y, float z, float nx, float ny, float nz, float r, float g, float b, int *index){
     d[(*index)++] = x; d[(*index)++] = y; d[(*index)++] = z;
     d[(*index)++] = nx; d[(*index)++] = ny; d[(*index)++] = nz;
     d[(*index)++] = r; d[(*index)++] = g; d[(*index)++] = b;
 }
 
 void getPIP(float *point, float *point_on_plane, float *ray_origin, float *ray_vector){
-    float pop_minus_ro[] = {point_on_plane[0] - ray_origin[0],point_on_plane[1] - ray_origin[1],point_on_plane[2] - ray_origin[2]};
+    float pop_minus_ro[] = {point_on_plane[0] - ray_origin[0], point_on_plane[1] - ray_origin[1], point_on_plane[2] - ray_origin[2]};
     float t = (1 * pop_minus_ro[1])/(1 * ray_vector[1]);
 
     point[0] = ray_origin[0] + (t * ray_vector[0]);
@@ -137,7 +137,7 @@ void update_clouds(float player_x, float player_y, float player_z, float rx, flo
         c->render = 0;
 
         // delete clouds that have strayed too far from the player, or have degenerated.
-        if ((pow(player_x - (((weather->clouds)[i])->x),2) + pow(player_z - (((weather->clouds)[i])->z),2)) > pow(500,2)) {
+        if ((pow(player_x - (((weather->clouds)[i])->x), 2) + pow(player_z - (((weather->clouds)[i])->z), 2)) > pow(500, 2)) {
 
             remove_cloud(c);
             weather->clouds[i] = NULL;
@@ -159,11 +159,11 @@ void update_clouds(float player_x, float player_y, float player_z, float rx, flo
 
             // check if the player is looking down, or if the player is above the clouds,
             //   and if the cloud is close enough to not be culled by the frag shader
-            if ((rz > -0.444 || player_y > CLOUD_Y_HEIGHT) && (pow(player_x - (((weather->clouds)[i])->x),2) + pow(player_z - (((weather->clouds)[i])->z),2)) < pow(250,2)) {
+            if ((rz > -0.444 || player_y > CLOUD_Y_HEIGHT) && (pow(player_x - (((weather->clouds)[i])->x), 2) + pow(player_z - (((weather->clouds)[i])->z), 2)) < pow(250, 2)) {
 
                 if (rz > 1.1) {
-                        // just check around us
-                    if ((pow(player_x - (((weather->clouds)[i])->x),2) + pow(player_z - (((weather->clouds)[i])->z),2)) < pow(130,2)) {
+                    // just check around us
+                    if ((pow(player_x - (((weather->clouds)[i])->x), 2) + pow(player_z - (((weather->clouds)[i])->z), 2)) < pow(130, 2)) {
                         c->render = 1;
                         rendering++;
                     }
@@ -171,12 +171,12 @@ void update_clouds(float player_x, float player_y, float player_z, float rx, flo
                 else {
                     float cvec[] = {c->x - rdx, c->z - rdz};
 
-                    float angle = acos((cvec[0]*lvec[0] + cvec[1]*lvec[1])/(sqrt(pow(cvec[0],2)+pow(cvec[1],2))*sqrt(pow(lvec[0],2)+pow(lvec[1],2))));
+                    float angle = acos((cvec[0]*lvec[0] + cvec[1]*lvec[1])/(sqrt(pow(cvec[0], 2)+pow(cvec[1], 2))*sqrt(pow(lvec[0], 2)+pow(lvec[1], 2))));
 
                     cvec[0] = c->x + c->hmWidth - rdx;
                     cvec[1] = c->z + c->hmDepth - rdx;
 
-                    float angletwo = acos((cvec[0]*lvec[0] + cvec[1]*lvec[1])/(sqrt(pow(cvec[0],2)+pow(cvec[1],2))*sqrt(pow(lvec[0],2)+pow(lvec[1],2))));
+                    float angletwo = acos((cvec[0]*lvec[0] + cvec[1]*lvec[1])/(sqrt(pow(cvec[0], 2)+pow(cvec[1], 2))*sqrt(pow(lvec[0], 2)+pow(lvec[1], 2))));
 
                     if (angle < lrangle || angletwo < lrangle) {
                         c->render = 1;
@@ -188,7 +188,7 @@ void update_clouds(float player_x, float player_y, float player_z, float rx, flo
     }
 
     //add new cloud if required.
-    add_cloud(player_x, player_z,rx,rz);
+    add_cloud(player_x, player_z, rx, rz);
 }
 
 void add_cloud(float player_x, float player_z, float rx, float rz){
@@ -201,10 +201,10 @@ void add_cloud(float player_x, float player_z, float rx, float rz){
         c->hmWidth = 32;
         c->hmDepth = 32;
         c->render = 0;
-        c->heightmap = (int*)calloc(sizeof(int),c->hmWidth * c->hmDepth);
+        c->heightmap = (int*)calloc(sizeof(int), c->hmWidth * c->hmDepth);
 
         //seed an initial value
-        int i,j;
+        int i, j;
         int placed = 0;
 
         while (placed == 0) {
@@ -267,28 +267,28 @@ void render_cloud(Cloud *cloud, CloudAttrib *attrib){
 
     mat_identity(matrix);
 
-    mat_translate(matrix,cloud->x - (cloud->hmWidth/2), CLOUD_Y_HEIGHT + cloud->y, cloud->z - (cloud->hmDepth/2));
+    mat_translate(matrix, cloud->x - (cloud->hmWidth/2), CLOUD_Y_HEIGHT + cloud->y, cloud->z - (cloud->hmDepth/2));
 
-    mat_scale(matrix,cloud->sx,cloud->sy,cloud->sz);
+    mat_scale(matrix, cloud->sx, cloud->sy, cloud->sz);
 
     glUniform3f(attrib->cloudColour, cloud->r, cloud->g, cloud->b);
 
     int i, j;
     for (i = 0; i < cloud->hmWidth; i++) {
         for (j=0; j < cloud->hmDepth; j++) {
-            mat_translate_existing(matrix,0,0,1);
+            mat_translate_existing(matrix, 0, 0, 1);
             int heightval = cloud->heightmap[i*(cloud->hmDepth) + j];
             if(heightval > 0){
                 float up = heightval/2.0f;
-                mat_translate_existing(matrix,0,up,0);
-                mat_scale(matrix, 1,heightval,1);
+                mat_translate_existing(matrix, 0, up, 0);
+                mat_scale(matrix, 1, heightval, 1);
                 glUniformMatrix4fv(attrib->model, 1, GL_FALSE, matrix);
                 glDrawArrays(GL_TRIANGLES, 0, 36);
-                mat_translate_existing(matrix,0,-up,0);
-                mat_scale(matrix, 1,1.0f/heightval,1);
+                mat_translate_existing(matrix, 0, -up, 0);
+                mat_scale(matrix, 1, 1.0f/heightval, 1);
             }
         }
-        mat_translate_existing(matrix,1,0,-cloud->hmDepth);
+        mat_translate_existing(matrix, 1, 0, -cloud->hmDepth);
     }
     glUniformMatrix4fv(attrib->model, 1, GL_FALSE, matrix_prev);
 }
@@ -300,10 +300,10 @@ void render_clouds(CloudAttrib *attrib, int width, int height, float x, float y,
     }
 
     float matrix[16];
-    set_matrix_3d(matrix, width, height, x,y,z,rx,ry, fov, ortho, radius);
+    set_matrix_3d(matrix, width, height, x, y, z, rx, ry, fov, ortho, radius);
     glUseProgram(attrib->program);
     glUniformMatrix4fv(attrib->matrix, 1, GL_FALSE, matrix);
-    glUniform3f(attrib->camera, x,y,z);
+    glUniform3f(attrib->camera, x, y, z);
     glUniform1i(attrib->sampler, 0);
     glUniform1f(attrib->timer, attrib->time);
 
