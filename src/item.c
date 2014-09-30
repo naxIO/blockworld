@@ -34,7 +34,7 @@ void _recalc_item_id_lookup_cache() {
     }
 
     // create new space
-    _item_id_lookup_cache = calloc(sizeof(struct item_list), last_item_id);
+    _item_id_lookup_cache = calloc(sizeof(struct item_list*), last_item_id + 1);
 
     // and allocate required id mappings with standard linked-list traversal
     struct item_list *it = NULL;
