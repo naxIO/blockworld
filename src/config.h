@@ -17,14 +17,18 @@
 // rendering options
 #define SHOW_LIGHTS 1
 #define SHOW_PLANTS 1
-#define SHOW_CLOUDS 1
+#define SHOW_CLOUDS 0
 #define SHOW_TREES 1
 #define SHOW_ITEM 1
-#define SHOW_CROSSHAIRS 1
-#define SHOW_WIREFRAME 1
+#define SHOW_CROSSHAIRS 0
+#define SHOW_WIREFRAME 0
 #define SHOW_INFO_TEXT 1
 #define SHOW_CHAT_TEXT 1
 #define SHOW_PLAYER_NAMES 1
+
+// toggle block building
+#define ENABLE_BUILD 0
+#define ENABLE_DESTROY 0
 
 // key bindings
 #define CRAFT_KEY_FORWARD 'W'

@@ -2138,28 +2138,32 @@ void on_light() {
 }
 
 void on_left_click() {
-    State *s = &g->players->state;
-    int hx, hy, hz;
-    int hw = hit_test(0, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
-    if (hy > 0 && hy < 256 && is_destructable(hw)) {
-        set_block(hx, hy, hz, 0);
-        record_block(hx, hy, hz, 0);
-        if (is_plant(get_block(hx, hy + 1, hz))) {
-            set_block(hx, hy + 1, hz, 0);
-        }
+    if (ENABLE_BUILD) {
+      State *s = &g->players->state;
+      int hx, hy, hz;
+      int hw = hit_test(0, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
+      if (hy > 0 && hy < 256 && is_destructable(hw)) {
+          set_block(hx, hy, hz, 0);
+          record_block(hx, hy, hz, 0);
+          if (is_plant(get_block(hx, hy + 1, hz))) {
+              set_block(hx, hy + 1, hz, 0);
+          }
     }
+  }
 }
 
 void on_right_click() {
-    State *s = &g->players->state;
-    int hx, hy, hz;
-    int hw = hit_test(1, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
-    if (hy > 0 && hy < 256 && is_obstacle(hw)) {
-        if (!player_intersects_block(2, s->x, s->y, s->z, hx, hy, hz)) {
-            set_block(hx, hy, hz, items[g->item_index]);
-            record_block(hx, hy, hz, items[g->item_index]);
-        }
-    }
+    if (ENABLE_DESTROY) {
+      State *s = &g->players->state;
+      int hx, hy, hz;
+      int hw = hit_test(1, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
+      if (hy > 0 && hy < 256 && is_obstacle(hw)) {
+          if (!player_intersects_block(2, s->x, s->y, s->z, hx, hy, hz)) {
+              set_block(hx, hy, hz, items[g->item_index]);
+              record_block(hx, hy, hz, items[g->item_index]);
+          }
+      }
+    }  
 }
 
 void on_middle_click() {
@@ -2438,7 +2442,7 @@ void handle_movement(double dt) {
             }
         }
     }
-    float speed = g->flying ? 20 : 5;
+    float speed = g->flying ? 20 : 7;
     int estimate = roundf(sqrtf(
         powf(vx * speed, 2) +
         powf(vy * speed + ABS(dy) * 2, 2) +
