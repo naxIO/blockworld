@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "api.h"
 #include "auth.h"
 #include "client.h"
 #include "config.h"
@@ -19,6 +20,7 @@
 #include "tinycthread.h"
 #include "util.h"
 #include "world.h"
+#include "clouds.h"
 
 #define MAX_CHUNKS 8192
 #define MAX_PLAYERS 128
@@ -39,12 +41,19 @@
 #define WORKER_BUSY 1
 #define WORKER_DONE 2
 
+#define RECV_BUFFER_SIZE 1024
+#define TEXT_BUFFER_SIZE 256
+#define LEFT 0
+#define CENTER 1
+#define RIGHT 2
+
+
 typedef struct {
     Map map;
     Map lights;
     SignList signs;
-    int p;
-    int q;
+    int p; // chunk 'x' id
+    int q; // chunk 'z' id
     int faces;
     int sign_faces;
     int dirty;
@@ -55,8 +64,8 @@ typedef struct {
 } Chunk;
 
 typedef struct {
-    int p;
-    int q;
+    int p; // chunk 'x' id
+    int q; // chunk 'z' id
     int load;
     Map *block_maps[3][3];
     Map *light_maps[3][3];
@@ -86,9 +95,9 @@ typedef struct {
     float x;
     float y;
     float z;
-    float rx;
-    float ry;
-    float t;
+    float rx; // 'x' rotation
+    float ry; // 'z' rotation
+    float t; // time
 } State;
 
 typedef struct {
@@ -187,9 +196,9 @@ int get_scale_factor() {
     int window_width, window_height;
     int buffer_width, buffer_height;
     glfwGetWindowSize(g->window, &window_width, &window_height);
-       if(window_width <= 0 || window_height <= 0){
-          return 0;
-       }
+    if (window_width <= 0 || window_height <= 0) {
+        return 0;
+    }
     glfwGetFramebufferSize(g->window, &buffer_width, &buffer_height);
     int result = buffer_width / window_width;
     result = MAX(1, result);
@@ -518,7 +527,7 @@ Player *player_crosshair(Player *player) {
         }
         float p = player_crosshair_distance(player, other);
         float d = player_player_distance(player, other);
-        if (d < 96 && p / d < threshold) {
+        if (d < PLAYER_NAME_DISTANCE && p / d < threshold) {
             if (best == 0 || d < best) {
                 best = d;
                 result = other;
@@ -1775,14 +1784,14 @@ void render_item(Attrib *attrib) {
     glUniform3f(attrib->camera, 0, 0, 5);
     glUniform1i(attrib->sampler, 0);
     glUniform1f(attrib->timer, time_of_day());
-    int w = items[g->item_index];
-    if (is_plant(w)) {
-        GLuint buffer = gen_plant_buffer(0, 0, 0, 0.5, w);
+    int item_id = g->item_index;
+    if (is_plant(item_id)) {
+        GLuint buffer = gen_plant_buffer(0, 0, 0, 0.5, item_id);
         draw_plant(attrib, buffer);
         del_buffer(buffer);
     }
     else {
-        GLuint buffer = gen_cube_buffer(0, 0, 0, 0.5, w);
+        GLuint buffer = gen_cube_buffer(0, 0, 0, 0.5, item_id);
         draw_cube(attrib, buffer);
         del_buffer(buffer);
     }
@@ -2141,41 +2150,37 @@ void on_light() {
 }
 
 void on_left_click() {
-    if (ENABLE_BUILD) {
-      State *s = &g->players->state;
-      int hx, hy, hz;
-      int hw = hit_test(0, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
-      if (hy > 0 && hy < 256 && is_destructable(hw)) {
-          set_block(hx, hy, hz, 0);
-          record_block(hx, hy, hz, 0);
-          if (is_plant(get_block(hx, hy + 1, hz))) {
-              set_block(hx, hy + 1, hz, 0);
-          }
+    State *s = &g->players->state;
+    int hx, hy, hz;
+    int hw = hit_test(0, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
+    if (hy > 0 && hy < 256 && is_destructable(hw)) {
+        set_block(hx, hy, hz, 0);
+        record_block(hx, hy, hz, 0);
+        if (is_plant(get_block(hx, hy + 1, hz))) {
+            set_block(hx, hy + 1, hz, 0);
+        }
     }
-  }
 }
 
 void on_right_click() {
-    if (ENABLE_DESTROY) {
-      State *s = &g->players->state;
-      int hx, hy, hz;
-      int hw = hit_test(1, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
-      if (hy > 0 && hy < 256 && is_obstacle(hw)) {
-          if (!player_intersects_block(2, s->x, s->y, s->z, hx, hy, hz)) {
-              set_block(hx, hy, hz, items[g->item_index]);
-              record_block(hx, hy, hz, items[g->item_index]);
-          }
-      }
-    }  
+    State *s = &g->players->state;
+    int hx, hy, hz;
+    int hw = hit_test(1, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
+    if (hy > 0 && hy < 256 && is_obstacle(hw)) {
+        if (!player_intersects_block(2, s->x, s->y, s->z, hx, hy, hz)) {
+            set_block(hx, hy, hz, g->item_index);
+            record_block(hx, hy, hz, g->item_index);
+        }
+    }
 }
 
 void on_middle_click() {
     State *s = &g->players->state;
     int hx, hy, hz;
     int hw = hit_test(0, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
-    for (int i = 0; i < item_count; i++) {
-        if (items[i] == hw) {
-            g->item_index = i;
+    for (int i = 0; i <= last_item_id; i++) {
+        if (get_item_by_id(i)->id == hw) {
+            g->item_index = hw;
             break;
         }
     }
@@ -2264,12 +2269,15 @@ void on_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
             g->item_index = 9;
         }
         if (key == CRAFT_KEY_ITEM_NEXT) {
-            g->item_index = (g->item_index + 1) % item_count;
+            g->item_index++;
+            if (g->item_index >= last_item_id) {
+                g->item_index = 0;
+            }
         }
         if (key == CRAFT_KEY_ITEM_PREV) {
             g->item_index--;
             if (g->item_index < 0) {
-                g->item_index = item_count - 1;
+                g->item_index = last_item_id - 1;
             }
         }
         if (key == CRAFT_KEY_OBSERVE) {
@@ -2318,13 +2326,16 @@ void on_scroll(GLFWwindow *window, double xdelta, double ydelta) {
     static double ypos = 0;
     ypos += ydelta;
     if (ypos < -SCROLL_THRESHOLD) {
-        g->item_index = (g->item_index + 1) % item_count;
+        g->item_index++;
+        if (g->item_index >= last_item_id) {
+            g->item_index = 0;
+        }
         ypos = 0;
     }
     if (ypos > SCROLL_THRESHOLD) {
         g->item_index--;
         if (g->item_index < 0) {
-            g->item_index = item_count - 1;
+            g->item_index = last_item_id - 1;
         }
         ypos = 0;
     }
@@ -2445,7 +2456,7 @@ void handle_movement(double dt) {
             }
         }
     }
-    float speed = g->flying ? 20 : 7;
+    float speed = g->flying ? 20 : 5;
     int estimate = roundf(sqrtf(
         powf(vx * speed, 2) +
         powf(vy * speed + ABS(dy) * 2, 2) +
@@ -2663,6 +2674,7 @@ int main(int argc, char **argv) {
     Attrib line_attrib = {0};
     Attrib text_attrib = {0};
     Attrib sky_attrib = {0};
+    CloudAttrib cloud_attrib = {0};
     GLuint program;
 
     program = load_program(
@@ -2679,7 +2691,22 @@ int main(int argc, char **argv) {
     block_attrib.extra4 = glGetUniformLocation(program, "ortho");
     block_attrib.camera = glGetUniformLocation(program, "camera");
     block_attrib.timer = glGetUniformLocation(program, "timer");
-
+    
+    program = load_program(
+        "shaders/cloud_vertex.glsl", "shaders/cloud_fragment.glsl");
+    cloud_attrib.program = program;
+    cloud_attrib.position = glGetAttribLocation(program, "position");
+    cloud_attrib.normal = glGetAttribLocation(program, "normal");
+    cloud_attrib.colour = glGetAttribLocation(program, "colour");
+    cloud_attrib.matrix = glGetUniformLocation(program, "matrix");
+    cloud_attrib.model = glGetUniformLocation(program, "model");
+    cloud_attrib.sampler = glGetUniformLocation(program, "sampler");
+    cloud_attrib.camera = glGetUniformLocation(program, "camera");
+    cloud_attrib.timer = glGetUniformLocation(program, "timer");
+    cloud_attrib.cloudColour = glGetUniformLocation(program, "cloudColour");
+    cloud_attrib.skysampler = glGetUniformLocation(program, "sky_sampler");
+    
+    
     program = load_program(
         "shaders/line_vertex.glsl", "shaders/line_fragment.glsl");
     line_attrib.program = program;
@@ -2771,6 +2798,13 @@ int main(int argc, char **argv) {
         me->buffer = 0;
         g->player_count = 1;
 
+        setup_base_items();
+        clua_init();
+
+        if (SHOW_CLOUDS) {
+            create_clouds();
+        }
+
         // LOAD STATE FROM DATABASE //
         int loaded = db_load_state(&s->x, &s->y, &s->z, &s->rx, &s->ry);
         force_chunks(me);
@@ -2836,6 +2870,10 @@ int main(int argc, char **argv) {
             }
             Player *player = g->players + g->observe1;
 
+            if (SHOW_CLOUDS) {
+                update_clouds(s->x, s->y, s->z, s->rx, s->ry, g->fov);
+            }
+
             // RENDER 3-D SCENE //
             glClear(GL_COLOR_BUFFER_BIT);
             glClear(GL_DEPTH_BUFFER_BIT);
@@ -2847,6 +2885,11 @@ int main(int argc, char **argv) {
             render_players(&block_attrib, player);
             if (SHOW_WIREFRAME) {
                 render_wireframe(&line_attrib, player);
+            }
+
+            if (SHOW_CLOUDS) {
+                cloud_attrib.time = time_of_day();
+                render_clouds(&cloud_attrib, g->width, g->height, s->x, s->y, s->z, s->rx, s->ry, g->fov, g->ortho, g->render_radius);
             }
 
             // RENDER HUD //
@@ -2954,6 +2997,10 @@ int main(int argc, char **argv) {
         }
 
         // SHUTDOWN //
+        clua_close();
+        if (SHOW_CLOUDS) {
+            cleanup_clouds();
+        }
         db_save_state(s->x, s->y, s->z, s->rx, s->ry);
         db_close();
         db_disable();

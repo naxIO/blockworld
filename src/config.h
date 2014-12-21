@@ -6,18 +6,19 @@
 #define FULLSCREEN 0
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 768
-#define VSYNC 1
+#define VSYNC 0
 #define SCROLL_THRESHOLD 0.1
 #define MAX_MESSAGES 4
 #define DB_PATH "craft.db"
 #define USE_CACHE 1
 #define DAY_LENGTH 600
 #define INVERT_MOUSE 0
+#define PLAYER_NAME_DISTANCE 96
 
 // rendering options
 #define SHOW_LIGHTS 1
 #define SHOW_PLANTS 1
-#define SHOW_CLOUDS 0
+#define SHOW_CLOUDS 1
 #define SHOW_TREES 1
 #define SHOW_ITEM 1
 #define SHOW_CROSSHAIRS 1
@@ -54,5 +55,8 @@
 #define DELETE_CHUNK_RADIUS 14
 #define CHUNK_SIZE 32
 #define COMMIT_INTERVAL 5
+
+#define CLOUD_Y_HEIGHT 80
+#define MAXIMUM_CLOUDS 100
 
 #endif
