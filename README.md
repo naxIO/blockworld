@@ -16,7 +16,7 @@ TODOS
 * Maybe add scoreboard to see the current scores
 * Generate Buildings and other stuff once in a while procedural
 * Make world actually darker add night (lightning fix)
-* Add background music (not too loud)
+* Add background music (not too loud) - introduce OpenAL to the game or so
 * Add stars and moon to night
 * Add sun(sunlight)
 
