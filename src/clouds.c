@@ -18,8 +18,8 @@ void create_clouds() {
 
     //set a prevailaing wind direction.
     weather->x_prevailing_winds = 0.025f;
-    weather->z_prevailing_winds = 0.013f;
-
+    weather->z_prevailing_winds = 0.035f;
+    
     weather->initial_generation = MAXIMUM_CLOUDS;
 
     weather->cloud_count = 0;

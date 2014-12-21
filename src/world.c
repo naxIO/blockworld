@@ -24,7 +24,7 @@ void create_world(int p, int q, world_func func, void *arg) {
             int z = q * CHUNK_SIZE + dz;
             float f = simplex2(x * 0.01, z * 0.01, 4, 0.2, 2);
             float g = simplex2(-x * 0.01, -z * 0.01, 2, 0.3, 2);
-            int mh = g * 32 + 16;
+            int mh = g * 32 + 25;
             int h = f * mh;
             int w = grass_block_id;
             unsigned int underblock_id = cobble_block_id;
