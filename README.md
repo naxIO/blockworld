@@ -15,7 +15,7 @@ TODOS
 * Add some sound effects (jump, walk, ambient, spells, death and respawn)
 * Maybe add scoreboard to see the current scores
 * Generate Buildings and other stuff once in a while procedural
-* Make world actually darker add night (lightning fix)
+* Make world actually darker at night (lightning fix)
 * Add background music (not too loud) - introduce OpenAL to the game or so
 * Add stars and moon to night
 * Add sun(sunlight)
