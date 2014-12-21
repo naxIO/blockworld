@@ -57,6 +57,6 @@
 #define COMMIT_INTERVAL 5
 
 #define CLOUD_Y_HEIGHT 80
-#define MAXIMUM_CLOUDS 100
+#define MAXIMUM_CLOUDS 200
 
 #endif
