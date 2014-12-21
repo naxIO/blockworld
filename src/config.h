@@ -20,7 +20,7 @@
 #define SHOW_CLOUDS 0
 #define SHOW_TREES 1
 #define SHOW_ITEM 1
-#define SHOW_CROSSHAIRS 0
+#define SHOW_CROSSHAIRS 1
 #define SHOW_WIREFRAME 0
 #define SHOW_INFO_TEXT 1
 #define SHOW_CHAT_TEXT 1
