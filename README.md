@@ -1,4 +1,4 @@
-## Blockworld
+## MageBattle
 
 My goal is to use this already good written engine and mechanics to create a different kind of game.
 
